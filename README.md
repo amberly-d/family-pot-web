@@ -87,6 +87,18 @@ Recipients use ISO 3166-1 alpha-2 country codes (for example `NG`) and have an o
 `notes` field. Validation lives in `src/data/recipient-validation.ts` and is shared by the form
 and the data sources; the mock rejects deleting a recipient that still has transfers.
 
+## Transfers page
+
+`/transfers` (`src/components/transfers`) lists transfers newest first as cards on phones and rows from the `md` breakpoint: date, recipient, amount, fee, provider and status, each amount with a provenance badge. Filters (recipient, date range, provider, status) and the page position live in the **URL query string**, so reloading a link, sharing it, or using back/forward restores the same view:
+
+`/transfers?recipient=<id>&from=2026-01-01&to=2026-06-30&provider=Wise&status=completed&cursor=<opaque>`
+
+Invalid or unknown values in the URL are ignored rather than breaking the page. Pagination is cursor-based (`First page` / `Next page`; use the browser's back button to go to an earlier page), matching the API (family-pot-api API-12), so a page never repeats or skips a transfer when data changes. The mapping between the URL and the filters is in `src/lib/transfer-url.ts`.
+
+### Data layer changes for transfers
+
+`transfers.list(query)` now takes the filters (`recipientId`, `dateFrom`, `dateTo`, `provider`, `status`, `limit`, `cursor`) and returns `{ items, limit, hasMore, nextCursor }`. `Transfer` now has `transferDate`, `receivingCurrency`, `provider` (and optional `purpose`, `notes`), and **amounts and fees are minor-unit strings** as in ADR 0004 (`"25000"` with GBP is 250.00), not decimal major units. The mock and the sample data follow this; the API stub still throws "not connected".
+
 ## Recipients page
 
 `/recipients` (`src/components/recipients`) lists recipients with loading, empty and error
