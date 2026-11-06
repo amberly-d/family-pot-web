@@ -94,6 +94,34 @@ states, and supports add, edit and delete (with confirmation). Field errors, whe
 validation or returned by the data layer, appear next to the field. Pass a `dataSource` prop to
 `RecipientsView` in tests.
 
+## Money and provenance
+
+Amounts follow [ADR 0004](https://github.com/family-pot/family-pot-docs/blob/main/adr/0004-money-representation.md): a **string of whole minor units** plus a currency code (`"15000"` with `GBP` is 150.00). Never use `number` arithmetic on money. `src/lib/money.ts` formats amounts without ever turning them into a float:
+
+```ts
+import { formatMoney } from "@/src/lib/money";
+
+formatMoney("15000", "GBP"); // "£150.00"
+formatMoney("28500", "JPY", "en-US"); // "¥28,500"        (0 decimals)
+formatMoney("3800", "KWD", "en-US"); // "KWD 3.800"      (3 decimals)
+formatMoney("9007199254740993", "JPY", "en-US"); // "¥9,007,199,254,740,993" (exact beyond 2^53)
+```
+
+`formatMoney` throws a `MoneyFormatError` for anything that is not a valid amount or a known currency, rather than showing a wrong number. It passes a decimal _string_ to `Intl.NumberFormat`, which formats it exactly. The default locale is `en-GB`; pass another locale as the third argument. `minorUnitsToDecimal` and `currencyExponent` are exported for lower-level use.
+
+Every displayed number should say where it came from. `ProvenanceBadge` shows one of four values, each with its own text and symbol (never colour alone), a description for screen readers and a tooltip:
+
+```tsx
+import { ProvenanceBadge } from "@/src/components";
+
+<ProvenanceBadge provenance="user-entered" />  {/* ✎ Entered by you */}
+<ProvenanceBadge provenance="calculated" />    {/* = Calculated */}
+<ProvenanceBadge provenance="estimated" />     {/* ≈ Estimated: bold, dashed, with a "not guaranteed" tooltip */}
+<ProvenanceBadge provenance="verified" />      {/* ✓ Verified */}
+```
+
+`estimated` is deliberately heavier so it cannot be mistaken for a fact. Pass children to replace the label (the description is kept).
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and the shared guidelines in family-pot-docs. Issues are
